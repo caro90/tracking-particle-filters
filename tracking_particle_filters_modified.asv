@@ -114,38 +114,41 @@ for fn=1520:1530  % 180
      
    
 
-    pf_xavg=sum(PF(1,:).*W);
-    pf_yavg=sum(PF(2,:).*W);
-    plot(pf_xavg,pf_yavg,'o','MarkerFaceColor','g');
-    quiver(pf_xavg,pf_yavg,sum(PF(3,:).*W),sum(PF(4,:).*W));
-    if -1>0
-    if ~exist('hplot_pfavg','var')
-        hplot_pfavg=plot(pf_xavg,pf_yavg,'o','MarkerFaceColor','g');
-    else
-        hplot_pfavg.XData=pf_xavg;
-        hplot_pfavg.YData=pf_yavg;
-    end
+        pf_xavg=sum(PF(1,:).*W);
+        pf_yavg=sum(PF(2,:).*W);
+        plot(pf_xavg,pf_yavg,'o','MarkerFaceColor','g');
+        quiver(pf_xavg,pf_yavg,sum(PF(3,:).*W),sum(PF(4,:).*W));
+        if -1>0
+        if ~exist('hplot_pfavg','var')
+            hplot_pfavg=plot(pf_xavg,pf_yavg,'o','MarkerFaceColor','g');
+        else
+            hplot_pfavg.XData=pf_xavg;
+            hplot_pfavg.YData=pf_yavg;
+        end
+        
+        if ~exist('hquiv_pfavg','var')
+            hquiv_pfavg=quiver(pf_xavg,pf_yavg,sum(PF(3,:).*W),sum(PF(4,:).*W));
+        else
+            hquiv_pfavg.XData=sum(PF(1,:).*W);
+            hquiv_pfavg.YData=sum(PF(2,:).*W);
+            hquiv_pfavg.UData=sum(PF(3,:).*W);
+            hquiv_pfavg.VData=sum(PF(4,:).*W);
+        end
+        
+        end
+        
+        drawnow
+ 
 
-    if ~exist('hquiv_pfavg','var')
-        hquiv_pfavg=quiver(pf_xavg,pf_yavg,sum(PF(3,:).*W),sum(PF(4,:).*W));
-    else
-        hquiv_pfavg.XData=sum(PF(1,:).*W);
-        hquiv_pfavg.YData=sum(PF(2,:).*W);
-        hquiv_pfavg.UData=sum(PF(3,:).*W);
-        hquiv_pfavg.VData=sum(PF(4,:).*W);
-    end
-
-    end
-    drawnow
-    if 1>0
-       hq1=quiver(PF(1,:),PF(2,:),PF(3,:),PF(4,:));
-    end
-
-    drawnow;
-    PF=PFnew;
-
-    drawnow
-    if  vid==1
+        if 1>0
+           hq1=quiver(PF(1,:),PF(2,:),PF(3,:),PF(4,:));
+        end
+        
+        drawnow;
+        PF=PFnew;
+         
+        drawnow
+        if  vid==1
             c1=fr;
         fr1 = getframe(fig1);
         fr2 = getframe(fig2);
@@ -166,3 +169,61 @@ for fn=1520:1530  % 180
 end
 
 
+if -1>0
+
+print("I am here")
+    
+pat=double(I(436:436+31,347:347+31,:));
+[H2d,cc]=hist2D(pat,0,255, 256);
+% I1=project_hist_fun(I,H2d,cc1,cc2);
+I1=project_hist_fun(double(I),H2d,cc,cc);
+
+% [H,C]=hist(I(:),20);
+
+
+if xroma==3
+    R=I(:,:,1);
+    G=I(:,:,2);
+    B=I(:,:,3);
+    maskR=I(436:436+31,347:347+31,1);
+    maskR=I(436:436+31,347:347+31,2);
+    maskR=I(436:436+31,347:347+31,3);
+else
+    I=double(rgb2gray(I));
+    mask=I(436:436+31,347:347+31);
+end
+
+
+Ksize=10;
+rmax=Ksize*sqrt(2);
+i0=429;
+j0=356;
+hold on;
+A=I(i0-Ksize:i0+Ksize,i0-Ksize:i0+Ksize);
+for i=-Ksize:Ksize
+    for j=-Ksize:Ksize
+        plot(j,i,'.')
+        v=I(i0+i,j0+j);
+        r=sqrt((i-Ksize)^2+(j-Ksize)^2)/rmax;
+        [temp,n]=min(abs(v-cc));
+        H(n)=H(n)+abs(1-r)/Ksize;
+    end
+end
+
+
+
+
+for i=1:N
+    for j=1:M
+        v1=I(i,j);
+         [temp,n]=min(abs(v1-cc));
+         I1(i,j)=H(n);
+    end
+end
+
+print("I am here2")
+end
+
+
+
+        
