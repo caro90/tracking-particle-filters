@@ -1,11 +1,10 @@
-function [G, I] = post_proc1_func(fn, v, M)
-    
+function [G, I,box_out] = post_proc1_func(fn, v, M)
     flag_plot=0;
-    %fn=1520;
     best=5;
     id=find(M(:,1)==fn);
     id_sort=sort(id,'ascend');
     id_sort10=id_sort(1:best);
+    box_out=M(id_sort10,3:6);
     v.CurrentTime=fn/30;
     I=readFrame(v);
     Nlin=size(I,1);

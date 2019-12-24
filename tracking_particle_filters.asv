@@ -1,0 +1,128 @@
+clear all
+close all
+vid=0; % delete
+vid_in=VideoReader('Data/My_hand_left.mp4');
+net_out=csvread('Data/My_left_hand_coordinates.csv');
+
+sigma_x=2;
+sigma_y=sigma_x;
+sigma_vx=1;
+sigma_vy=sigma_vx;
+% speed_max: ??
+speed_max=5;
+
+fig1=figure;
+fig2=figure;
+psize1=8;
+psize2=8;
+
+[G, I]=post_proc1_func(1, vid_in, net_out);
+Nlin=size(I,1);
+Ncol=size(I,2);
+%% PF init
+Npf=1000;
+Ndim=5;  % [x,y,vx,vy,scale]
+PF=zeros(Ndim,Npf); 
+PF(1,:)=(Ncol-1)*rand(1,Npf)+1;
+PF(2,:)=(Nlin-1)*rand(1,Npf)+1;
+id=find(PF(1,:)>Ncol | PF(1,:)<1 | PF(2,:)>Nlin | PF(2,:)<1);
+PF(1,id)=(Ncol-1)*rand(1,length(id))+1;
+PF(2,id)=(Nlin-1)*rand(1,length(id))+1;
+
+
+PF(3:4,:)=2*speed_max*rand(2,Npf)-speed_max;
+PF(5,:)=rand(1,Npf)+0.5;
+W=ones(1,Npf)/Npf;
+
+figure(fig1);hold on; imshow(I,[]);
+
+
+resampled=1;
+iter=0;
+for fn= 10 : 1000%size(net_out,1)  
+    [G, I,box_out]=post_proc1_func(fn, vid_in, net_out);
+    Nlin=size(I,1);
+    Ncol=size(I,2);
+    figure(fig1);hold on;imshow(uint8(I));contour(G);
+    ymin=box_out(:,1);
+    xmin=box_out(:,2);
+    ymax=box_out(:,3);
+    xmax=box_out(:,4);
+    for i=1:5
+        plot({xmin(i),xmax(i),xmax(i),xmin(i),xmin(i)},)
+    end
+    iter=iter+1;
+    N=size(I,1);
+    M=size(I,2);
+    
+    
+    %% sample PFs
+    cv2=sum((W-1/Npf).^2);
+    ess=Npf/(1+cv2);
+    if mod(iter,1)==0
+        resampled=1;
+        for i=1:Npf
+            d(i)=selection_roulette_wheel(W);
+            PF_temp(:,i)=PF(:,d(i));
+        end
+        PF=PF_temp;
+    else
+        resampled=0;
+    end
+   
+    %% evolve PFs
+    % position 1-2: x,y
+    PFnew(1,:)=PF(1,:)+PF(3,:)+sigma_x*randn(1,Npf);
+    PFnew(2,:)=PF(2,:)+PF(4,:)+sigma_y*randn(1,Npf);
+    PFnew(3,:)=PF(3,:)+sigma_vx*randn(1,Npf);
+    PFnew(4,:)=PF(4,:)+sigma_vy*randn(1,Npf);
+    PFnew(5,:)=PF(5,:);
+    
+    %% evaluate PFs
+    for i=1:Npf
+        ipf=round(PF(2,i));
+        jpf=round(PF(1,i));
+        if ipf-psize1>=1 && ipf+psize1<=Nlin && jpf-psize2>=1 && jpf+psize2<=Ncol
+            Bhat(i) = G(ipf, jpf);    
+        else       
+            Bhat(i)=0;
+        end
+     end
+     if resampled==1
+         W=Bhat;
+     else
+         W=W.*Bhat;
+     end
+     W=W/sum(W);
+    
+
+    pf_xavg=sum(PF(1,:).*W);
+    pf_yavg=sum(PF(2,:).*W);
+    plot(pf_xavg,pf_yavg,'o','MarkerFaceColor','g');
+    quiver(pf_xavg,pf_yavg,sum(PF(3,:).*W),sum(PF(4,:).*W));
+    hq1=quiver(PF(1,:),PF(2,:),PF(3,:),PF(4,:));
+    title(num2str(fn));
+    drawnow;
+    PF=PFnew;
+    %% Delete
+%     if  vid==1
+%             c1=fr;
+%         fr1 = getframe(fig1);
+%         fr2 = getframe(fig2);
+%         if c1<10
+%             fname=['.\jpegs\f0000',int2str(c1),'.jpg'];
+%         elseif c1<100
+%             fname=['.\jpegs\f000',int2str(c1),'.jpg'];
+%         elseif c1<1000
+%             fname=['.\jpegs\f00',int2str(c1),'.jpg'];
+%         elseif c1<10000
+%             fname=['.\jpegs\f0',int2str(c1),'.jpg'];
+%         else
+%             fname=[pth,'.\jpegs\f',int2str(c1),'.jpg'];
+%         end
+% 
+%         imwrite([fr1.cdata,fr2.cdata],fname);
+%     end
+end
+
+
